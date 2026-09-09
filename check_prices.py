@@ -39,7 +39,7 @@ def process_items(
         name = item["name"]
         url = item["url"]
         target_price = item.get("target_price")
-        last_price: Optional[float] = state.get(url, {}).get("price")
+        last_price: Optional[float] = (state.get(url) or {}).get("price")
 
         try:
             html = fetch_html_fn(url)
@@ -56,7 +56,9 @@ def process_items(
             message = format_message(name, current_price, url)
             for notify in notify_fns:
                 try:
-                    notify(message)
+                    result = notify(message)
+                    if result is False:
+                        print(f"[WARN] Canal rejeitou a notificação de '{name}'", file=sys.stderr)
                 except Exception as exc:  # noqa: BLE001 - one bad channel must not stop the batch
                     print(f"[WARN] Falha ao notificar '{name}' via {notify!r}: {exc}", file=sys.stderr)
                     continue

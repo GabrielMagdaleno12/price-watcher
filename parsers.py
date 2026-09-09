@@ -27,6 +27,9 @@ def _find_price_in_jsonld(data) -> Optional[float]:
                     return _to_float(offer["price"])
         if "price" in data:
             return _to_float(data["price"])
+        graph = data.get("@graph")
+        if isinstance(graph, list):
+            return _find_price_in_jsonld(graph)
     return None
 
 
