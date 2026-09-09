@@ -1,0 +1,5 @@
+# Adicione um item por bloco. "target_price" é opcional — se omitido,
+# você recebe alerta em QUALQUER queda de preço em relação à última checagem.
+- name: "Exemplo - remova este item"
+  url: "https://www.kabum.com.br/produto/000000"
+  target_price: 999.90
