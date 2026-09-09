@@ -78,3 +78,22 @@ def test_process_items_skips_item_when_price_not_found():
 
     assert sent == []
     assert new_state == {}
+
+
+def test_process_items_continues_when_one_notify_fn_raises():
+    items = [{"name": "Tenis X", "url": "https://loja.com/x", "target_price": 600.0}]
+    sent = []
+
+    def failing_notify(message):
+        raise RuntimeError("webhook down")
+
+    new_state = process_items(
+        items,
+        state={},
+        fetch_html_fn=lambda url: HTML_599,
+        notify_fns=[failing_notify, sent.append],
+    )
+
+    assert len(sent) == 1
+    assert "Tenis X" in sent[0]
+    assert new_state["https://loja.com/x"]["price"] == 599.90

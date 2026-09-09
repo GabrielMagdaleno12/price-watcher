@@ -55,7 +55,11 @@ def process_items(
         if should_alert(current_price, target_price, last_price):
             message = format_message(name, current_price, url)
             for notify in notify_fns:
-                notify(message)
+                try:
+                    notify(message)
+                except Exception as exc:  # noqa: BLE001 - one bad channel must not stop the batch
+                    print(f"[WARN] Falha ao notificar '{name}' via {notify!r}: {exc}", file=sys.stderr)
+                    continue
 
         new_state[url] = {
             "price": current_price,
