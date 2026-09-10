@@ -25,21 +25,40 @@ function renderItems() {
   list.innerHTML = "";
   itemsCache.forEach((item) => {
     const last = lastPoint(item.url);
-    const li = document.createElement("li");
-    li.className = "item-card";
 
     const price = last ? `R$ ${last.price.toFixed(2)}` : "sem checagem ainda";
     const target = item.target_price != null ? `R$ ${item.target_price.toFixed(2)}` : "qualquer queda";
     const checkedAt = last ? new Date(last.checked_at).toLocaleString("pt-BR") : "-";
 
-    li.innerHTML = `
-      <div class="item-info">
-        <a href="${item.url}" target="_blank" rel="noopener">${item.name}</a>
-        <span class="price">${price}</span>
-        <span class="target">alvo: ${target}</span>
-        <span class="checked-at">checado em: ${checkedAt}</span>
-      </div>
-    `;
+    const li = document.createElement("li");
+    li.className = "item-card";
+
+    const info = document.createElement("div");
+    info.className = "item-info";
+
+    // item.name/item.url come from data that a later task will let users
+    // edit, so build this DOM with textContent/property assignment rather
+    // than innerHTML string interpolation - no field can inject markup.
+    const link = document.createElement("a");
+    link.href = item.url;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = item.name;
+
+    const priceEl = document.createElement("span");
+    priceEl.className = "price";
+    priceEl.textContent = price;
+
+    const targetEl = document.createElement("span");
+    targetEl.className = "target";
+    targetEl.textContent = `alvo: ${target}`;
+
+    const checkedAtEl = document.createElement("span");
+    checkedAtEl.className = "checked-at";
+    checkedAtEl.textContent = `checado em: ${checkedAt}`;
+
+    info.append(link, priceEl, targetEl, checkedAtEl);
+    li.appendChild(info);
     list.appendChild(li);
   });
 }
