@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from datetime import datetime, timezone
@@ -5,15 +6,14 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import requests
-import yaml
 
 from decision import should_alert
+from history import append_snapshot, load_history, save_history
 from notifiers import send_discord, send_telegram
 from parsers import extract_price
-from state import load_state, save_state
 
-ITEMS_FILE = Path("items.yaml")
-STATE_FILE = Path("state.json")
+ITEMS_FILE = Path("docs/data/items.json")
+HISTORY_FILE = Path("docs/data/history.json")
 
 
 def fetch_html(url: str) -> str:
@@ -71,9 +71,14 @@ def process_items(
     return new_state
 
 
+def compute_fresh_points(old_state: dict, new_state: dict) -> dict:
+    return {url: entry for url, entry in new_state.items() if old_state.get(url) != entry}
+
+
 def main() -> None:
-    items = yaml.safe_load(ITEMS_FILE.read_text(encoding="utf-8")) or []
-    state = load_state(STATE_FILE)
+    items = json.loads(ITEMS_FILE.read_text(encoding="utf-8")) or []
+    history = load_history(HISTORY_FILE)
+    state = {url: points[-1] for url, points in history.items() if points}
 
     notify_fns = []
     telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
@@ -90,7 +95,9 @@ def main() -> None:
         print("[INFO] Discord não configurado - pulando esse canal.", file=sys.stderr)
 
     new_state = process_items(items, state, fetch_html, notify_fns)
-    save_state(STATE_FILE, new_state)
+    fresh_points = compute_fresh_points(state, new_state)
+    new_history = append_snapshot(history, fresh_points)
+    save_history(HISTORY_FILE, new_history)
 
 
 if __name__ == "__main__":

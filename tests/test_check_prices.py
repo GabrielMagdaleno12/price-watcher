@@ -1,4 +1,4 @@
-from check_prices import format_message, process_items
+from check_prices import compute_fresh_points, format_message, process_items
 
 HTML_599 = """<script type="application/ld+json">
 {"@type":"Product","offers":{"price":599.90}}</script>"""
@@ -112,3 +112,13 @@ def test_process_items_continues_when_one_notify_fn_raises():
     assert len(sent) == 1
     assert "Tenis X" in sent[0]
     assert new_state["https://loja.com/x"]["price"] == 599.90
+
+
+def test_compute_fresh_points_includes_only_changed_entries():
+    old_state = {"https://x": {"price": 10.0, "checked_at": "t1"}}
+    new_state = {
+        "https://x": {"price": 10.0, "checked_at": "t1"},
+        "https://y": {"price": 20.0, "checked_at": "t2"},
+    }
+    result = compute_fresh_points(old_state, new_state)
+    assert result == {"https://y": {"price": 20.0, "checked_at": "t2"}}
