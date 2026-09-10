@@ -36,9 +36,9 @@ function renderItems() {
     const info = document.createElement("div");
     info.className = "item-info";
 
-    // item.name/item.url come from data that a later task will let users
-    // edit, so build this DOM with textContent/property assignment rather
-    // than innerHTML string interpolation - no field can inject markup.
+    // item.name/item.url are user-supplied via the add-item form below, so
+    // build this DOM with textContent/property assignment rather than
+    // innerHTML string interpolation - no field can inject markup.
     const link = document.createElement("a");
     link.href = item.url;
     link.target = "_blank";
@@ -58,8 +58,20 @@ function renderItems() {
     checkedAtEl.textContent = `checado em: ${checkedAt}`;
 
     info.append(link, priceEl, targetEl, checkedAtEl);
-    li.appendChild(info);
+
+    // Same rationale as above: item.url is user-supplied, so set it via
+    // .dataset rather than interpolating into an HTML string.
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "remove-btn";
+    removeBtn.dataset.url = item.url;
+    removeBtn.textContent = "remover";
+
+    li.append(info, removeBtn);
     list.appendChild(li);
+  });
+
+  list.querySelectorAll(".remove-btn").forEach((btn) => {
+    btn.addEventListener("click", () => removeItem(btn.dataset.url));
   });
 }
 
@@ -180,6 +192,144 @@ function renderChart(url) {
   });
 }
 
+const TOKEN_KEY = "pw_github_token";
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || "";
+}
+
+function setToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary);
+}
+
+function base64ToUtf8(base64) {
+  const binary = atob(base64);
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+async function githubGetItemsFile() {
+  const response = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${ITEMS_PATH}`,
+    { headers: { Authorization: `Bearer ${getToken()}` } }
+  );
+  if (!response.ok) {
+    throw new Error(`GitHub API retornou ${response.status} ao ler items.json`);
+  }
+  const data = await response.json();
+  const items = JSON.parse(base64ToUtf8(data.content));
+  return { items, sha: data.sha };
+}
+
+async function githubPutItemsFile(items, sha, message) {
+  const content = utf8ToBase64(JSON.stringify(items, null, 2));
+  const response = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${ITEMS_PATH}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message, content, sha, branch: "main" }),
+    }
+  );
+  if (!response.ok) {
+    const error = new Error(`GitHub API retornou ${response.status} ao gravar items.json`);
+    error.status = response.status;
+    throw error;
+  }
+}
+
+function setStatus(elementId, text, isError) {
+  const el = document.getElementById(elementId);
+  el.textContent = text;
+  el.classList.toggle("error", Boolean(isError));
+}
+
+async function addItem(event) {
+  event.preventDefault();
+  if (!getToken()) {
+    setStatus("add-status", "Cole seu token do GitHub na seção abaixo antes de adicionar.", true);
+    return;
+  }
+
+  const name = document.getElementById("add-name").value.trim();
+  const url = document.getElementById("add-url").value.trim();
+  const targetRaw = document.getElementById("add-target").value.trim();
+  const target_price = targetRaw === "" ? null : Number(targetRaw);
+
+  setStatus("add-status", "Adicionando...", false);
+  try {
+    const { items, sha } = await githubGetItemsFile();
+    items.push({ name, url, target_price });
+    await githubPutItemsFile(items, sha, `Add item: ${name}`);
+    itemsCache = items;
+    renderItems();
+    populateItemSelect();
+    document.getElementById("add-form").reset();
+    setStatus("add-status", "Item adicionado. O gráfico populará após a próxima checagem.", false);
+  } catch (err) {
+    if (err.status === 409) {
+      setStatus("add-status", "Algo mudou no repositório enquanto você editava. Recarregando a lista, tente de novo.", true);
+      await loadData();
+      renderItems();
+      populateItemSelect();
+      return;
+    }
+    setStatus("add-status", err.message, true);
+  }
+}
+
+async function removeItem(url) {
+  if (!getToken()) {
+    setStatus("add-status", "Cole seu token do GitHub na seção abaixo antes de remover.", true);
+    return;
+  }
+  if (!confirm("Remover este item da lista de monitoramento?")) {
+    return;
+  }
+
+  try {
+    const { items, sha } = await githubGetItemsFile();
+    const remaining = items.filter((item) => item.url !== url);
+    await githubPutItemsFile(remaining, sha, `Remove item: ${url}`);
+    itemsCache = remaining;
+    renderItems();
+    populateItemSelect();
+    if (itemsCache.length > 0) {
+      renderChart(itemsCache[0].url);
+    } else if (chartInstance) {
+      chartInstance.destroy();
+      chartInstance = null;
+    }
+  } catch (err) {
+    if (err.status === 409) {
+      setStatus("add-status", "Algo mudou no repositório enquanto você editava. Recarregando a lista, tente de novo.", true);
+      await loadData();
+      renderItems();
+      populateItemSelect();
+      return;
+    }
+    setStatus("add-status", err.message, true);
+  }
+}
+
+function handleTokenSubmit(event) {
+  event.preventDefault();
+  const input = document.getElementById("token-input");
+  setToken(input.value.trim());
+  input.value = "";
+  setStatus("token-status", "Token salvo neste navegador.", false);
+}
+
 async function init() {
   await loadData();
   renderItems();
@@ -190,6 +340,8 @@ async function init() {
   document.getElementById("item-select").addEventListener("change", (e) => {
     renderChart(e.target.value);
   });
+  document.getElementById("add-form").addEventListener("submit", addItem);
+  document.getElementById("token-form").addEventListener("submit", handleTokenSubmit);
 
   // Re-theme the chart if the OS/browser color scheme flips while the page
   // is open (dataviz: dark mode is a selected state re-run against its own
