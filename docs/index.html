@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price Watcher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Price Watcher</h1>
+    <p>Itens monitorados e histórico de preço.</p>
+  </header>
+
+  <main>
+    <section id="items-section">
+      <h2>Itens monitorados</h2>
+      <ul id="items-list"></ul>
+    </section>
+
+    <section id="chart-section">
+      <h2>Histórico de preço</h2>
+      <label for="item-select">Item:</label>
+      <select id="item-select"></select>
+      <canvas id="price-chart" height="120"></canvas>
+      <p id="chart-empty" hidden>Sem dados de histórico ainda para este item.</p>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
