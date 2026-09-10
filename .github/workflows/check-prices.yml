@@ -32,6 +32,6 @@ jobs:
         run: |
           git config user.name "price-watcher-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add state.json
+          git add docs/data/history.json
           git diff --cached --quiet || git commit -m "Update price state [skip ci]"
           git push
