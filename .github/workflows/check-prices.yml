@@ -2,7 +2,7 @@ name: Check prices
 
 on:
   schedule:
-    - cron: "0 * * * *"   # a cada hora, no minuto 0 (ajuste aqui a frequência)
+    - cron: "30 * * * *"   # a cada hora, no minuto 0 (ajuste aqui a frequência)
   workflow_dispatch: {}
 
 permissions:
