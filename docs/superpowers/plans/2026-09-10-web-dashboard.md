@@ -6,7 +6,7 @@
 
 **Architecture:** `check_prices.py` reads `docs/data/items.json` and appends one point per item per run to `docs/data/history.json` (both committed by the existing hourly GitHub Action). A static site in `docs/` (served by GitHub Pages from branch `main`, folder `/docs`) reads those two files with `fetch()` for viewing, and writes to `docs/data/items.json` via the GitHub REST Contents API (authenticated with a user-supplied Personal Access Token kept in `localStorage`) for adding/removing items.
 
-**Tech Stack:** Python 3.11 (stdlib `json` — no more PyYAML), pytest, vanilla HTML/CSS/JS, Chart.js 4.4.4 (via cdnjs, UMD build), GitHub REST API v3 (Contents endpoint), GitHub Pages.
+**Tech Stack:** Python 3.11 (stdlib `json` — no more PyYAML), pytest, vanilla HTML/CSS/JS, Chart.js 4.5.1 (via cdnjs, UMD build), GitHub REST API v3 (Contents endpoint), GitHub Pages.
 
 **Spec:** `docs/superpowers/specs/2026-09-10-web-dashboard-design.md`
 
@@ -17,7 +17,7 @@
 - No backfilled history — `docs/data/history.json` grows only from points recorded after this ships; the one existing `state.json` point is carried forward as the first history point during migration (Task 2), not treated as "backfill."
 - No pruning/rotation of history — unbounded growth is accepted for now.
 - No build step or JS framework — plain HTML/CSS/JS files GitHub Pages can serve as-is.
-- Chart library: Chart.js, pinned version `4.4.4`, loaded from `https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.js`.
+- Chart library: Chart.js, pinned version `4.5.1`, loaded from `https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.js`.
 - GitHub repo/owner for the API calls: owner `GabrielMagdaleno12`, repo `price-watcher` (hardcoded in `app.js` — this site only ever talks to this one repo).
 - PAT is stored in the browser via `localStorage` only, sent only to `api.github.com`, never written to any file in the repo.
 
@@ -427,7 +427,7 @@ Before writing the chart code in this task, invoke the **dataviz** skill for gui
     </section>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
