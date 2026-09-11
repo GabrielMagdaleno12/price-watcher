@@ -93,7 +93,7 @@ def test_append_snapshot_does_not_mutate_input_history():
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `python -m pytest tests/test_history.py -v`
+Run: `py -3 -m pytest tests/test_history.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'history'`
 
 - [ ] **Step 3: Write the implementation**
@@ -124,7 +124,7 @@ def append_snapshot(history: dict, snapshot: dict) -> dict:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `python -m pytest tests/test_history.py -v`
+Run: `py -3 -m pytest tests/test_history.py -v`
 Expected: PASS (5 tests)
 
 - [ ] **Step 5: Commit**
@@ -145,39 +145,53 @@ git commit -m "Add history.py module for price history tracking"
 **Interfaces:**
 - Produces: the on-disk files Task 3's `check_prices.py` will read/write, and Task 5's `app.js` will `fetch()`.
 
-- [ ] **Step 1: Create the directory and `items.json`**
+**Note:** `items.yaml`/`state.json` are live files the hourly bot keeps updating — do NOT hand-type their contents into the new files (any snapshot written into this plan document would already be stale by execution time). Convert them programmatically from whatever they currently contain.
 
-Create `docs/data/items.json`, converting the current `items.yaml` entry (drop the YAML comment header; use `null` for the omitted `target_price`):
+- [ ] **Step 1: Create the directory and convert `items.yaml` to `items.json`**
 
-```json
-[
-  {
-    "name": "Volante Logitech G923 (PS5/PS4/PC)",
-    "url": "https://www.kabum.com.br/produto/117284/volante-logitech-g923-para-ps5-ps4-e-pc-com-force-feedback-trueforce-pedais-responsivos-launch-control-941-000148",
-    "target_price": null
-  }
+```bash
+mkdir -p docs/data
+py -3 -c "
+import json
+from pathlib import Path
+import yaml
+
+items = yaml.safe_load(Path('items.yaml').read_text(encoding='utf-8')) or []
+converted = [
+    {'name': i['name'], 'url': i['url'], 'target_price': i.get('target_price')}
+    for i in items
 ]
+Path('docs/data/items.json').write_text(
+    json.dumps(converted, indent=2, ensure_ascii=False), encoding='utf-8'
+)
+print(f'wrote {len(converted)} items')
+"
 ```
 
-- [ ] **Step 2: Create `history.json`**
+(This environment's Python is invoked as `py -3`, not `python` — use `py -3` for every Python command in this task and all later tasks.)
 
-Create `docs/data/history.json`, carrying forward the one existing `state.json` point as the first history entry:
+- [ ] **Step 2: Convert `state.json` to `history.json`**
 
-```json
-{
-  "https://www.kabum.com.br/produto/117284/volante-logitech-g923-para-ps5-ps4-e-pc-com-force-feedback-trueforce-pedais-responsivos-launch-control-941-000148": [
-    {
-      "price": 2399.0,
-      "checked_at": "2026-09-09T02:06:07.515335+00:00"
-    }
-  ]
-}
+Each entry in `state.json` becomes a one-point history list for that URL:
+
+```bash
+py -3 -c "
+import json
+from pathlib import Path
+
+state = json.loads(Path('state.json').read_text(encoding='utf-8'))
+history = {url: [entry] for url, entry in state.items()}
+Path('docs/data/history.json').write_text(
+    json.dumps(history, indent=2, ensure_ascii=False), encoding='utf-8'
+)
+print(f'wrote history for {len(history)} urls')
+"
 ```
 
-- [ ] **Step 3: Verify both files parse as valid JSON**
+- [ ] **Step 3: Verify both files parse as valid JSON and look right**
 
-Run: `python -c "import json; json.load(open('docs/data/items.json')); json.load(open('docs/data/history.json')); print('ok')"`
-Expected: prints `ok`
+Run: `py -3 -c "import json; items=json.load(open('docs/data/items.json')); history=json.load(open('docs/data/history.json')); print(len(items), 'items,', len(history), 'history entries')"`
+Expected: prints counts with no error. Sanity-check that the item count matches the number of entries in `items.yaml` (open both files and compare by eye if the count looks off).
 
 - [ ] **Step 4: Commit**
 
@@ -221,7 +235,7 @@ def test_compute_fresh_points_includes_only_changed_entries():
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `python -m pytest tests/test_check_prices.py::test_compute_fresh_points_includes_only_changed_entries -v`
+Run: `py -3 -m pytest tests/test_check_prices.py::test_compute_fresh_points_includes_only_changed_entries -v`
 Expected: FAIL with `ImportError: cannot import name 'compute_fresh_points'`
 
 - [ ] **Step 3: Implement `compute_fresh_points` and rewire `check_prices.py`**
@@ -288,7 +302,7 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: Run the new test to verify it passes**
 
-Run: `python -m pytest tests/test_check_prices.py::test_compute_fresh_points_includes_only_changed_entries -v`
+Run: `py -3 -m pytest tests/test_check_prices.py::test_compute_fresh_points_includes_only_changed_entries -v`
 Expected: PASS
 
 - [ ] **Step 5: Update `requirements.txt`**
@@ -308,7 +322,7 @@ git rm items.yaml state.py state.json tests/test_state.py
 
 - [ ] **Step 7: Run the full test suite**
 
-Run: `python -m pytest -v`
+Run: `py -3 -m pytest -v`
 Expected: PASS, all tests green (existing `process_items`/`format_message` tests unaffected, plus the new `compute_fresh_points` test; `test_state.py`'s tests are gone since `history.py` covers the same ground in `test_history.py`).
 
 - [ ] **Step 8: Commit**
@@ -356,7 +370,7 @@ to:
 
 - [ ] **Step 2: Verify the YAML is well-formed**
 
-Run: `python -c "import yaml; yaml.safe_load(open('.github/workflows/check-prices.yml')); print('ok')"`
+Run: `py -3 -c "import yaml; yaml.safe_load(open('.github/workflows/check-prices.yml')); print('ok')"`
 Expected: prints `ok` (PyYAML is still installed locally from the dev environment even though it's no longer a runtime dependency; if this fails because PyYAML was uninstalled from your venv, run `pip install pyyaml` just for this check, or open the file and confirm the indentation visually)
 
 - [ ] **Step 3: Commit**
@@ -676,19 +690,19 @@ init();
 
 Run (from the repo root):
 ```bash
-python -m http.server 8000 --directory docs &
+py -3 -m http.server 8000 --directory docs &
 sleep 1
 curl -s http://localhost:8000/ | grep -q "Price Watcher" && echo "index ok"
 curl -s http://localhost:8000/data/items.json | grep -q "Logitech" && echo "items.json ok"
-curl -s http://localhost:8000/data/history.json | grep -q "2399" && echo "history.json ok"
+curl -s http://localhost:8000/data/history.json | grep -q "price" && echo "history.json ok"
 curl -s http://localhost:8000/app.js | grep -q "function renderChart" && echo "app.js ok"
 kill %1
 ```
-Expected: all four `... ok` lines print.
+Expected: all four `... ok` lines print. (The exact item/price checked here is whatever `docs/data/items.json`/`history.json` currently contain post-migration — the "Logitech" wheel is expected to still be present since Task 2 carries every current item forward, but don't hardcode further assumptions about the data.)
 
 - [ ] **Step 5: Manually confirm rendering in a real browser**
 
-Serve `docs/` locally again (`python -m http.server 8000 --directory docs`) and open `http://localhost:8000` in a browser. Confirm: the item card shows the Logitech wheel with price `R$ 2399.00` and a "checado em" timestamp, and the chart renders a single point for that item (since `history.json` currently has only one entry).
+Serve `docs/` locally again (`py -3 -m http.server 8000 --directory docs`) and open `http://localhost:8000` in a browser. Confirm: every item in `docs/data/items.json` shows up as a card with its current price (or "sem checagem ainda" if it has no history yet) and a "checado em" timestamp, the item selector lists all of them, and selecting an item with at least one history point renders a chart (an item with zero history points should show the "sem dados ainda" message instead of a broken chart).
 
 - [ ] **Step 6: Commit**
 
@@ -944,7 +958,7 @@ async function init() {
 - [ ] **Step 6: Verify static serving still works and the new markup is present**
 
 ```bash
-python -m http.server 8000 --directory docs &
+py -3 -m http.server 8000 --directory docs &
 sleep 1
 curl -s http://localhost:8000/ | grep -q "id=\"add-form\"" && echo "add form present"
 curl -s http://localhost:8000/ | grep -q "id=\"token-form\"" && echo "token form present"

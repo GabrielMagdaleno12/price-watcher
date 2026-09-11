@@ -15,20 +15,29 @@ Monitora o preço de produtos e avisa no Telegram e Discord quando cai.
    - `TELEGRAM_BOT_TOKEN`
    - `TELEGRAM_CHAT_ID`
    - `DISCORD_WEBHOOK_URL`
+4. **GitHub Pages**: veja a seção "Habilitar o GitHub Pages" abaixo do
+   "Dashboard".
 
-## Uso
+## Dashboard
 
-Edite `items.yaml` para adicionar ou remover produtos. Cada item tem:
+Acesse `https://gabrielmagdaleno12.github.io/price-watcher/` para ver os
+itens monitorados, o histórico de preço em gráfico, e adicionar ou remover
+itens.
 
-```yaml
-- name: "Nome do produto"
-  url: "https://loja.com/produto"
-  target_price: 599.90   # opcional
-```
+Para adicionar/remover pelo site você precisa de um token do GitHub:
+1. Crie um [fine-grained personal access token](https://github.com/settings/personal-access-tokens/new)
+   com acesso restrito a este repositório e permissão **Contents: Read and
+   write**.
+2. Cole o token na seção "Conectar ao GitHub" do site (fica salvo só no seu
+   navegador).
 
-A checagem roda automaticamente pelo GitHub Actions (veja o cron em
-`.github/workflows/check-prices.yml`). Para rodar manualmente e testar, vá
-na aba **Actions** do repositório → **Check prices** → **Run workflow**.
+Também é possível editar `docs/data/items.json` diretamente pelo GitHub
+(cada item tem `name`, `url` e `target_price`, que pode ser `null`).
+
+### Habilitar o GitHub Pages (uma vez só)
+
+Settings → Pages → Source: "Deploy from a branch" → branch `master`, pasta
+`/docs`.
 
 ## Rodando localmente (opcional, para testes)
 

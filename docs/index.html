@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Price Watcher</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Price Watcher</h1>
+    <p>Itens monitorados e histórico de preço.</p>
+  </header>
+
+  <main>
+    <section id="items-section">
+      <h2>Itens monitorados</h2>
+      <ul id="items-list"></ul>
+    </section>
+
+    <section id="chart-section">
+      <h2>Histórico de preço</h2>
+      <label for="item-select">Item:</label>
+      <select id="item-select"></select>
+      <canvas id="price-chart" height="120"></canvas>
+      <p id="chart-empty" hidden>Sem dados de histórico ainda para este item.</p>
+    </section>
+
+    <section id="add-section">
+      <h2>Adicionar item</h2>
+      <form id="add-form">
+        <label>Nome<input type="text" id="add-name" required></label>
+        <label>URL<input type="url" id="add-url" required></label>
+        <label>Preço-alvo (opcional)<input type="number" id="add-target" step="0.01" min="0"></label>
+        <button type="submit">Adicionar</button>
+      </form>
+      <p id="add-status" role="status"></p>
+    </section>
+
+    <section id="token-section">
+      <h2>Conectar ao GitHub</h2>
+      <p>Necessário só para adicionar ou remover itens. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Criar um token</a> com permissão "Contents: Read and write" neste repositório.</p>
+      <form id="token-form">
+        <label>Token<input type="password" id="token-input" placeholder="github_pat_..."></label>
+        <button type="submit">Salvar token</button>
+      </form>
+      <p id="token-status" role="status"></p>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

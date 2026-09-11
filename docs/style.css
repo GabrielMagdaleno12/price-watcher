@@ -1,0 +1,132 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f8fafc;
+  --fg: #0f172a;
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+  --accent: #2563eb;
+  --error: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --fg: #e2e8f0;
+    --card-bg: #1e293b;
+    --border: #334155;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 16px 48px;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+header, main {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+header { margin-bottom: 24px; }
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+h1, h2 { margin-top: 0; }
+
+#items-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-info a {
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.item-info a:hover { text-decoration: underline; }
+
+.price { font-size: 1.1rem; font-weight: 600; }
+.target, .checked-at { font-size: 0.85rem; opacity: 0.75; }
+
+.remove-btn, button[type="submit"] {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.remove-btn {
+  background: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 360px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--fg);
+}
+
+#chart-empty { opacity: 0.7; }
+
+[role="status"] { font-size: 0.9rem; min-height: 1.2em; }
+[role="status"].error { color: var(--error); }
+
+canvas { max-width: 100%; }
