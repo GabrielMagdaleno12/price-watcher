@@ -113,20 +113,34 @@ function formatBRL(value) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+// Single source of truth for the "nothing to chart" UI state: destroys any
+// live Chart.js instance, hides the canvas, and shows the empty-state
+// message. Used both when a selected item has no history points yet
+// (renderChart) and when the last remaining item is removed (removeItem).
+function clearChart() {
+  const canvas = document.getElementById("price-chart");
+  const emptyMsg = document.getElementById("chart-empty");
+  if (chartInstance) {
+    chartInstance.destroy();
+    chartInstance = null;
+  }
+  canvas.hidden = true;
+  emptyMsg.hidden = false;
+}
+
 function renderChart(url) {
   const canvas = document.getElementById("price-chart");
   const emptyMsg = document.getElementById("chart-empty");
   const points = historyCache[url] || [];
 
+  if (points.length === 0) {
+    clearChart();
+    return;
+  }
+
   if (chartInstance) {
     chartInstance.destroy();
     chartInstance = null;
-  }
-
-  if (points.length === 0) {
-    canvas.hidden = true;
-    emptyMsg.hidden = false;
-    return;
   }
 
   canvas.hidden = false;
@@ -254,6 +268,18 @@ function setStatus(elementId, text, isError) {
   el.classList.toggle("error", Boolean(isError));
 }
 
+// Single implementation of the "someone else wrote items.json while I was
+// editing" recovery flow (a GitHub Contents API 409): show a friendly
+// message on the given status element, then reload from disk and re-render
+// so the UI reflects the current remote state. Shared by addItem and
+// removeItem's catch blocks.
+async function handleConflict(statusElId) {
+  setStatus(statusElId, "Algo mudou no repositório enquanto você editava. Recarregando a lista, tente de novo.", true);
+  await loadData();
+  renderItems();
+  populateItemSelect();
+}
+
 async function addItem(event) {
   event.preventDefault();
   if (!getToken()) {
@@ -278,10 +304,7 @@ async function addItem(event) {
     setStatus("add-status", "Item adicionado. O gráfico populará após a próxima checagem.", false);
   } catch (err) {
     if (err.status === 409) {
-      setStatus("add-status", "Algo mudou no repositório enquanto você editava. Recarregando a lista, tente de novo.", true);
-      await loadData();
-      renderItems();
-      populateItemSelect();
+      await handleConflict("add-status");
       return;
     }
     setStatus("add-status", err.message, true);
@@ -306,16 +329,12 @@ async function removeItem(url) {
     populateItemSelect();
     if (itemsCache.length > 0) {
       renderChart(itemsCache[0].url);
-    } else if (chartInstance) {
-      chartInstance.destroy();
-      chartInstance = null;
+    } else {
+      clearChart();
     }
   } catch (err) {
     if (err.status === 409) {
-      setStatus("add-status", "Algo mudou no repositório enquanto você editava. Recarregando a lista, tente de novo.", true);
-      await loadData();
-      renderItems();
-      populateItemSelect();
+      await handleConflict("add-status");
       return;
     }
     setStatus("add-status", err.message, true);
