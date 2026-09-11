@@ -6,6 +6,13 @@ let itemsCache = [];
 let historyCache = {};
 let chartInstance = null;
 
+// Only http(s) URLs are safe to use as an anchor href or to submit as a new
+// item's url - a javascript: URI would execute page-origin script (able to
+// read the GitHub PAT from localStorage) if a user ever clicked the link.
+function isHttpUrl(url) {
+  return /^https?:\/\//i.test(url);
+}
+
 async function loadData() {
   const [itemsRes, historyRes] = await Promise.all([
     fetch("data/items.json", { cache: "no-store" }),
@@ -40,9 +47,15 @@ function renderItems() {
     // build this DOM with textContent/property assignment rather than
     // innerHTML string interpolation - no field can inject markup.
     const link = document.createElement("a");
-    link.href = item.url;
-    link.target = "_blank";
-    link.rel = "noopener";
+    // Defensively re-check the scheme even though addItem() now validates it
+    // before submitting - this protects against data that predates that
+    // validation or was hand-edited into docs/data/items.json. A non-http(s)
+    // url renders as plain, non-clickable text (no href set).
+    if (isHttpUrl(item.url)) {
+      link.href = item.url;
+      link.target = "_blank";
+      link.rel = "noopener";
+    }
     link.textContent = item.name;
 
     const priceEl = document.createElement("span");
@@ -232,7 +245,7 @@ function base64ToUtf8(base64) {
 async function githubGetItemsFile() {
   const response = await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${ITEMS_PATH}`,
-    { headers: { Authorization: `Bearer ${getToken()}` } }
+    { headers: { Authorization: `Bearer ${getToken()}` }, cache: "no-store" }
   );
   if (!response.ok) {
     throw new Error(`GitHub API retornou ${response.status} ao ler items.json`);
@@ -252,7 +265,11 @@ async function githubPutItemsFile(items, sha, message) {
         Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message, content, sha, branch: "main" }),
+      // No `branch` key: let the GitHub API default to the repository's
+      // actual default branch, so this keeps working if that branch is ever
+      // renamed (hardcoding "main" here previously broke every write, since
+      // this repo's default branch is "master").
+      body: JSON.stringify({ message, content, sha }),
     }
   );
   if (!response.ok) {
@@ -292,6 +309,11 @@ async function addItem(event) {
   const targetRaw = document.getElementById("add-target").value.trim();
   const target_price = targetRaw === "" ? null : Number(targetRaw);
 
+  if (!isHttpUrl(url)) {
+    setStatus("add-status", "A URL precisa começar com http:// ou https://.", true);
+    return;
+  }
+
   setStatus("add-status", "Adicionando...", false);
   try {
     const { items, sha } = await githubGetItemsFile();
@@ -300,6 +322,9 @@ async function addItem(event) {
     itemsCache = items;
     renderItems();
     populateItemSelect();
+    if (itemsCache.length > 0) {
+      renderChart(itemsCache[0].url);
+    }
     document.getElementById("add-form").reset();
     setStatus("add-status", "Item adicionado. O gráfico populará após a próxima checagem.", false);
   } catch (err) {
@@ -350,12 +375,11 @@ function handleTokenSubmit(event) {
 }
 
 async function init() {
-  await loadData();
-  renderItems();
-  populateItemSelect();
-  if (itemsCache.length > 0) {
-    renderChart(itemsCache[0].url);
-  }
+  // Attach all event listeners unconditionally, before loading any data, so
+  // the add form / token form / item selector stay usable even if loadData()
+  // below throws (network error, malformed JSON, etc). Previously these were
+  // only attached after a successful load, which left the whole page inert
+  // with no indication anything had gone wrong.
   document.getElementById("item-select").addEventListener("change", (e) => {
     renderChart(e.target.value);
   });
@@ -372,6 +396,23 @@ async function init() {
         renderChart(select.value);
       }
     });
+  }
+
+  try {
+    await loadData();
+    renderItems();
+    populateItemSelect();
+    if (itemsCache.length > 0) {
+      renderChart(itemsCache[0].url);
+    } else {
+      clearChart();
+    }
+  } catch (err) {
+    const list = document.getElementById("items-list");
+    list.innerHTML = "";
+    const li = document.createElement("li");
+    li.textContent = "Erro ao carregar os dados. Recarregue a página.";
+    list.appendChild(li);
   }
 }
 

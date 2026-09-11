@@ -36,7 +36,7 @@ Também é possível editar `docs/data/items.json` diretamente pelo GitHub
 
 ### Habilitar o GitHub Pages (uma vez só)
 
-Settings → Pages → Source: "Deploy from a branch" → branch `main`, pasta
+Settings → Pages → Source: "Deploy from a branch" → branch `master`, pasta
 `/docs`.
 
 ## Rodando localmente (opcional, para testes)
