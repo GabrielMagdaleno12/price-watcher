@@ -27,26 +27,33 @@ function lastPoint(url) {
   return points && points.length ? points[points.length - 1] : null;
 }
 
+function renderItemsSummary() {
+  const summary = document.getElementById("items-summary");
+  const count = itemsCache.length;
+  summary.textContent = count === 1 ? "1 item monitorado" : `${count} itens monitorados`;
+}
+
 function renderItems() {
   const list = document.getElementById("items-list");
   list.innerHTML = "";
   itemsCache.forEach((item) => {
     const last = lastPoint(item.url);
 
-    const price = last ? `R$ ${last.price.toFixed(2)}` : "sem checagem ainda";
-    const target = item.target_price != null ? `R$ ${item.target_price.toFixed(2)}` : "qualquer queda";
-    const checkedAt = last ? new Date(last.checked_at).toLocaleString("pt-BR") : "-";
+    const price = last ? formatBRL(last.price) : "sem checagem ainda";
+    const target = item.target_price != null ? `alvo: ${formatBRL(item.target_price)}` : "alvo: qualquer queda";
+    const checkedAt = last ? `checado em: ${new Date(last.checked_at).toLocaleString("pt-BR")}` : "checado em: -";
 
     const li = document.createElement("li");
-    li.className = "item-card";
+    li.className = "row";
 
-    const info = document.createElement("div");
-    info.className = "item-info";
+    const main = document.createElement("div");
+    main.className = "row__main";
 
     // item.name/item.url are user-supplied via the add-item form below, so
     // build this DOM with textContent/property assignment rather than
     // innerHTML string interpolation - no field can inject markup.
     const link = document.createElement("a");
+    link.className = "row__name";
     // Defensively re-check the scheme even though addItem() now validates it
     // before submitting - this protects against data that predates that
     // validation or was hand-edited into docs/data/items.json. A non-http(s)
@@ -58,19 +65,19 @@ function renderItems() {
     }
     link.textContent = item.name;
 
-    const priceEl = document.createElement("span");
-    priceEl.className = "price";
-    priceEl.textContent = price;
-
+    const meta = document.createElement("div");
+    meta.className = "row__meta";
     const targetEl = document.createElement("span");
-    targetEl.className = "target";
-    targetEl.textContent = `alvo: ${target}`;
-
+    targetEl.textContent = target;
     const checkedAtEl = document.createElement("span");
-    checkedAtEl.className = "checked-at";
-    checkedAtEl.textContent = `checado em: ${checkedAt}`;
+    checkedAtEl.textContent = checkedAt;
+    meta.append(targetEl, checkedAtEl);
 
-    info.append(link, priceEl, targetEl, checkedAtEl);
+    main.append(link, meta);
+
+    const priceEl = document.createElement("div");
+    priceEl.className = "row__price";
+    priceEl.textContent = price;
 
     // Same rationale as above: item.url is user-supplied, so set it via
     // .dataset rather than interpolating into an HTML string.
@@ -79,13 +86,15 @@ function renderItems() {
     removeBtn.dataset.url = item.url;
     removeBtn.textContent = "remover";
 
-    li.append(info, removeBtn);
+    li.append(main, priceEl, removeBtn);
     list.appendChild(li);
   });
 
   list.querySelectorAll(".remove-btn").forEach((btn) => {
     btn.addEventListener("click", () => removeItem(btn.dataset.url));
   });
+
+  renderItemsSummary();
 }
 
 function populateItemSelect() {
@@ -99,26 +108,27 @@ function populateItemSelect() {
   });
 }
 
-// Chart color tokens, from the dataviz skill's validated default palette
-// (categorical slot 1 / "blue" - references/palette.md). This chart only ever
-// shows one series at a time (the item picked in the selector), so it uses the
-// single-hue line spec rather than a multi-series categorical set.
+// Chart color tokens, matching the page's dashboard palette (docs/style.css
+// custom properties, duplicated here as Chart.js draws to a <canvas> and
+// can't read CSS custom properties directly). This chart only ever shows one
+// series at a time (the item picked in the selector), so the accent indigo
+// used for interactive elements doubles as the single-hue line color.
 function getChartTheme() {
   const isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   return isDark
     ? {
-        line: "#3987e5",
-        fill: "rgba(57, 135, 229, 0.10)",
-        pointRing: "#1e293b", // matches --card-bg (dark) so point rings sit on the card surface
-        grid: "#2c2c2a",
-        axis: "#898781",
+        line: "#818cf8",
+        fill: "rgba(129, 140, 248, 0.14)",
+        pointRing: "#131922", // matches --panel (dark) so point rings sit on the panel surface
+        grid: "#232b36",
+        axis: "#8b93a1",
       }
     : {
-        line: "#2a78d6",
-        fill: "rgba(42, 120, 214, 0.10)",
-        pointRing: "#ffffff", // matches --card-bg (light)
-        grid: "#e1e0d9",
-        axis: "#898781",
+        line: "#4f46e5",
+        fill: "rgba(79, 70, 229, 0.10)",
+        pointRing: "#ffffff", // matches --panel (light)
+        grid: "#e4e7ec",
+        axis: "#6b7280",
       };
 }
 
@@ -413,6 +423,7 @@ async function init() {
     const li = document.createElement("li");
     li.textContent = "Erro ao carregar os dados. Recarregue a página.";
     list.appendChild(li);
+    document.getElementById("items-summary").textContent = "Erro ao carregar";
   }
 }
 
