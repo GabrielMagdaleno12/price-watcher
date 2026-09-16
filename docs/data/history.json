@@ -139,6 +139,10 @@
     {
       "price": 2449.0,
       "checked_at": "2026-09-16T11:50:53.163022+00:00"
+    },
+    {
+      "price": 2399.0,
+      "checked_at": "2026-09-16T17:09:24.352888+00:00"
     }
   ],
   "https://www.kabum.com.br/produto/1004851/console-playstation-5-slim-digital-825gb-ssd-1-controle-dualsense": [
@@ -281,6 +285,10 @@
     {
       "price": 6054.21,
       "checked_at": "2026-09-16T11:50:53.647755+00:00"
+    },
+    {
+      "price": 6054.21,
+      "checked_at": "2026-09-16T17:09:24.625000+00:00"
     }
   ],
   "https://www.kabum.com.br/produto/880908/placa-de-video-asus-geforce-rtx-5080-tuf-gaming-oc-16gb-gddr7-256bits": [
@@ -423,6 +431,10 @@
     {
       "price": 15799.0,
       "checked_at": "2026-09-16T11:50:54.145054+00:00"
+    },
+    {
+      "price": 15799.0,
+      "checked_at": "2026-09-16T17:09:24.918819+00:00"
     }
   ]
 }
